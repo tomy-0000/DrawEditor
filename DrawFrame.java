@@ -169,7 +169,7 @@ class DrawModel extends Observable {
         fig = new ArrayList<Figure>();
         drawingFigure = null;
         currentColor = new Color(0, 0, 0);
-        currentLinewidth = 5;
+        currentLinewidth = 1;
         currentFigure = "Rectangle";
     }
 
