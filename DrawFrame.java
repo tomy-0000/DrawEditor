@@ -319,16 +319,19 @@ class ShapeSelectPanel extends JPanel implements ActionListener {
 class BackPanel extends JPanel implements ActionListener {
     JButton backB;
     DrawModel model;
+    ViewPanel view;
 
-    public BackPanel(DrawModel model) {
+    public BackPanel(DrawModel model, ViewPanel view) {
         this.model = model;
+        this.view = view;
         backB = new JButton("Back");
+        backB.addActionListener(this);
         this.add(backB);
     }
 
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == backB) this.model.cnt -= 1;
-        System.out.println(this.model.cnt);
+        if (e.getSource() == backB) this.model.cnt = Math.max(0, this.model.cnt - 1);
+        this.view.repaint();
     }
 }
 
@@ -342,20 +345,25 @@ class DrawFrame extends JFrame {
     ShapeSelectPanel shapeSelect;
     BackPanel back;
     DrawController cont;
+    JTabbedPane tabbedpane;
+
 
     public DrawFrame() {
         model = new DrawModel();
         cont = new DrawController(model);
         view = new ViewPanel(model, cont);
-        // colorSelect = new ColorSelectPanel(model);
+        colorSelect = new ColorSelectPanel(model);
         shapeSelect = new ShapeSelectPanel(model);
-        back = new BackPanel(model);
+        back = new BackPanel(model, view);
+        tabbedpane = new JTabbedPane();
+        tabbedpane.addTab("Color", colorSelect);
+        tabbedpane.addTab("Shape", shapeSelect);
+        tabbedpane.setSelectedIndex(0);
 
         this.setBackground(Color.black);
         this.setTitle("Draw Editor");
-        this.setSize(500, 500);
-        // this.add(colorSelect, BorderLayout.NORTH);
-        this.add(shapeSelect, BorderLayout.NORTH);
+        this.setSize(750, 750);
+        this.add(tabbedpane, BorderLayout.NORTH);
         this.add(view);
         this.add(back, BorderLayout.SOUTH);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
