@@ -6,7 +6,7 @@ import java.util.*;
 
 // 描画した図形を記録する Figure クラス (継承して利用する)
 class Figure {
-    protected int x, y, width, height;
+    protected int x, y, width, height, linewidth;
     protected Color color;
 
     public Figure(int x, int y, int w, int h, Color c) {
@@ -14,6 +14,7 @@ class Figure {
         this.y = y; // this.x, this.y はインスタンス変数．
         width = w;
         height = h; // ローカル変数で同名の変数がある場合は，this
+        linewidth = 5;
         color = c; // を付けると，インスタンス変数を指す．
     }
 
@@ -148,7 +149,7 @@ class DrawModel extends Observable {
     protected Figure drawingFigure;
     protected Color currentColor;
     protected String currentFigure;
-    int cnt = 0;
+    int cnt = 0, max_cnt = 0;  // undo, redo用
 
     public DrawModel() {
         fig = new ArrayList<Figure>();
@@ -175,6 +176,7 @@ class DrawModel extends Observable {
         if (this.currentFigure == "Stroke") f = new StrokeFigure(x, y, 0, 0, currentColor);
         fig.add(this.cnt, f);
         this.cnt += 1;
+        this.max_cnt = this.cnt;
         drawingFigure = f;
         setChanged();
         notifyObservers();
@@ -346,21 +348,26 @@ class ShapeSelectPanel extends JPanel implements ActionListener {
     }
 }
 
-class BackPanel extends JPanel implements ActionListener {
-    JButton backB;
+class UndoRedoPanel extends JPanel implements ActionListener {
+    JButton undoB;
+    JButton redoB;
     DrawModel model;
     ViewPanel view;
 
-    public BackPanel(DrawModel model, ViewPanel view) {
+    public UndoRedoPanel(DrawModel model, ViewPanel view) {
         this.model = model;
         this.view = view;
-        backB = new JButton("Back");
-        backB.addActionListener(this);
-        this.add(backB);
+        undoB = new JButton("Undo");
+        undoB.addActionListener(this);
+        this.add(undoB);
+        redoB = new JButton("Redo");
+        redoB.addActionListener(this);
+        this.add(redoB);
     }
 
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == backB) this.model.cnt = Math.max(0, this.model.cnt - 1);
+        if (e.getSource() == undoB) this.model.cnt = Math.max(0, this.model.cnt - 1);
+        if (e.getSource() == redoB) this.model.cnt = Math.min(this.model.max_cnt, this.model.cnt + 1);
         this.view.repaint();
     }
 }
@@ -373,7 +380,7 @@ class DrawFrame extends JFrame {
     ViewPanel view;
     ColorSelectPanel colorSelect;
     ShapeSelectPanel shapeSelect;
-    BackPanel back;
+    UndoRedoPanel undoRedo;
     DrawController cont;
     JTabbedPane tabbedpane;
 
@@ -384,7 +391,7 @@ class DrawFrame extends JFrame {
         view = new ViewPanel(model, cont);
         colorSelect = new ColorSelectPanel(model);
         shapeSelect = new ShapeSelectPanel(model);
-        back = new BackPanel(model, view);
+        undoRedo = new UndoRedoPanel(model, view);
         tabbedpane = new JTabbedPane();
         tabbedpane.addTab("Color", colorSelect);
         tabbedpane.addTab("Shape", shapeSelect);
@@ -395,7 +402,7 @@ class DrawFrame extends JFrame {
         this.setSize(750, 750);
         this.add(tabbedpane, BorderLayout.NORTH);
         this.add(view);
-        this.add(back, BorderLayout.SOUTH);
+        this.add(undoRedo, BorderLayout.SOUTH);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setVisible(true);
     }
