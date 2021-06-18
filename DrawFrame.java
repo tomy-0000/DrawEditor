@@ -9,12 +9,12 @@ class Figure {
     protected int x, y, width, height, linewidth;
     protected Color color;
 
-    public Figure(int x, int y, int w, int h, Color c) {
+    public Figure(int x, int y, int w, int h, Color c, int l) {
         this.x = x;
         this.y = y; // this.x, this.y はインスタンス変数．
         width = w;
         height = h; // ローカル変数で同名の変数がある場合は，this
-        linewidth = 5;
+        linewidth = l;
         color = c; // を付けると，インスタンス変数を指す．
     }
 
@@ -42,60 +42,68 @@ class Figure {
 }
 
 class RectangleFigure extends Figure {
-    public RectangleFigure(int x, int y, int w, int h, Color c) {
-        super(x, y, w, h, c);
+    public RectangleFigure(int x, int y, int w, int h, Color c, int l) {
+        super(x, y, w, h, c, l);
         // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
         // superで親のコンストラクタを呼び出すだけ．
     }
 
     public void draw(Graphics g) {
         g.setColor(color);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setStroke(new BasicStroke(linewidth));
         g.drawRect(x, y, width, height);
     }
 }
 
 class FillRectangleFigure extends Figure {
-    public FillRectangleFigure(int x, int y, int w, int h, Color c) {
-        super(x, y, w, h, c);
+    public FillRectangleFigure(int x, int y, int w, int h, Color c, int l) {
+        super(x, y, w, h, c, l);
         // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
         // superで親のコンストラクタを呼び出すだけ．
     }
 
     public void draw(Graphics g) {
         g.setColor(color);
-        g.fillRect(x, y, width, height);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setStroke(new BasicStroke(linewidth));
+        g2.fillRect(x, y, width, height);
     }
 }
 
 class OvalFigure extends Figure {
-    public OvalFigure(int x, int y, int w, int h, Color c) {
-        super(x, y, w, h, c);
+    public OvalFigure(int x, int y, int w, int h, Color c, int l) {
+        super(x, y, w, h, c, l);
         // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
         // superで親のコンストラクタを呼び出すだけ．
     }
 
     public void draw(Graphics g) {
         g.setColor(color);
-        g.drawOval(x, y, width, height);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setStroke(new BasicStroke(linewidth));
+        g2.drawOval(x, y, width, height);
     }
 }
 
 class FillOvalFigure extends Figure {
-    public FillOvalFigure(int x, int y, int w, int h, Color c) {
-        super(x, y, w, h, c);
+    public FillOvalFigure(int x, int y, int w, int h, Color c, int l) {
+        super(x, y, w, h, c, l);
         // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
         // superで親のコンストラクタを呼び出すだけ．
     }
 
     public void draw(Graphics g) {
         g.setColor(color);
-        g.fillOval(x, y, width, height);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setStroke(new BasicStroke(linewidth));
+        g2.fillOval(x, y, width, height);
     }
 }
 
 class LineFigure extends Figure {
-    public LineFigure(int x, int y, int w, int h, Color c) {
-        super(x, y, w, h, c);
+    public LineFigure(int x, int y, int w, int h, Color c, int l) {
+        super(x, y, w, h, c, l);
         // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
         // superで親のコンストラクタを呼び出すだけ．
     }
@@ -111,15 +119,17 @@ class LineFigure extends Figure {
 
     public void draw(Graphics g) {
         g.setColor(color);
-        g.drawLine(x, y, x+width, y+height);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setStroke(new BasicStroke(linewidth));
+        g2.drawLine(x, y, x + width, y + height);
     }
 }
 
 class StrokeFigure extends Figure {
     protected ArrayList<Integer> strokeHistory;
 
-    public StrokeFigure(int x, int y, int w, int h, Color c) {
-        super(x, y, w, h, c);
+    public StrokeFigure(int x, int y, int w, int h, Color c, int l) {
+        super(x, y, w, h, c, l);
         strokeHistory = new ArrayList<Integer>();
         strokeHistory.add(x);
         strokeHistory.add(y);
@@ -134,8 +144,11 @@ class StrokeFigure extends Figure {
 
     public void draw(Graphics g) {
         g.setColor(color);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setStroke(new BasicStroke(linewidth));
         for (int i = 2; i < this.strokeHistory.size(); i += 2) {
-            g.drawLine(strokeHistory.get(i - 2), strokeHistory.get(i - 1), strokeHistory.get(i), strokeHistory.get(i + 1));
+            g2.drawLine(strokeHistory.get(i - 2), strokeHistory.get(i - 1), strokeHistory.get(i),
+                    strokeHistory.get(i + 1));
         }
     }
 }
@@ -148,13 +161,15 @@ class DrawModel extends Observable {
     protected ArrayList<Figure> fig;
     protected Figure drawingFigure;
     protected Color currentColor;
+    protected int currentLinewidth;
     protected String currentFigure;
-    int cnt = 0, max_cnt = 0;  // undo, redo用
+    int cnt = 0, max_cnt = 0; // undo, redo用
 
     public DrawModel() {
         fig = new ArrayList<Figure>();
         drawingFigure = null;
         currentColor = new Color(0, 0, 0);
+        currentLinewidth = 5;
         currentFigure = "Rectangle";
     }
 
@@ -168,12 +183,18 @@ class DrawModel extends Observable {
 
     public void createFigure(int x, int y) {
         Figure f = null;
-        if (this.currentFigure == "Rectangle") f = new RectangleFigure(x, y, 0, 0, currentColor);
-        if (this.currentFigure == "fillRectangle") f = new FillRectangleFigure(x, y, 0, 0, currentColor);
-        if (this.currentFigure == "Oval") f = new OvalFigure(x, y, 0, 0, currentColor);
-        if (this.currentFigure == "fillOval") f = new FillOvalFigure(x, y, 0, 0, currentColor);
-        if (this.currentFigure == "Line") f = new LineFigure(x, y, 0, 0, currentColor);
-        if (this.currentFigure == "Stroke") f = new StrokeFigure(x, y, 0, 0, currentColor);
+        if (this.currentFigure == "Rectangle")
+            f = new RectangleFigure(x, y, 0, 0, currentColor, currentLinewidth);
+        if (this.currentFigure == "fillRectangle")
+            f = new FillRectangleFigure(x, y, 0, 0, currentColor, currentLinewidth);
+        if (this.currentFigure == "Oval")
+            f = new OvalFigure(x, y, 0, 0, currentColor, currentLinewidth);
+        if (this.currentFigure == "fillOval")
+            f = new FillOvalFigure(x, y, 0, 0, currentColor, currentLinewidth);
+        if (this.currentFigure == "Line")
+            f = new LineFigure(x, y, 0, 0, currentColor, currentLinewidth);
+        if (this.currentFigure == "Stroke")
+            f = new StrokeFigure(x, y, 0, 0, currentColor, currentLinewidth);
         fig.add(this.cnt, f);
         this.cnt += 1;
         this.max_cnt = this.cnt;
@@ -309,9 +330,11 @@ class ColorSelectPanel extends JPanel implements ChangeListener, ActionListener 
     }
 }
 
-class ShapeSelectPanel extends JPanel implements ActionListener {
+class ShapeSelectPanel extends JPanel implements ChangeListener, ActionListener {
     JButton rectangleB, fillRectangleB, ovalB, fillOvalB, lineB, strokeB;
-    JPanel allP;
+    JSlider linewidthSlider;
+    JLabel linewidthLabel;
+    JPanel linewidthPanel;
     DrawModel model;
 
     public ShapeSelectPanel(DrawModel model) {
@@ -330,21 +353,43 @@ class ShapeSelectPanel extends JPanel implements ActionListener {
         lineB.addActionListener(this);
         strokeB.addActionListener(this);
 
+        linewidthPanel = new JPanel();
+        linewidthSlider = new JSlider(1, 20, 1);
+        linewidthSlider.addChangeListener(this);
+        linewidthLabel = new JLabel("1");
+        linewidthPanel.add(new JLabel("linewidth"), BorderLayout.WEST);
+        linewidthPanel.add(linewidthSlider, BorderLayout.CENTER);
+        linewidthPanel.add(linewidthLabel, BorderLayout.EAST);
+
         this.add(rectangleB);
         this.add(fillRectangleB);
         this.add(ovalB);
         this.add(fillOvalB);
         this.add(lineB);
         this.add(strokeB);
+        this.add(linewidthPanel, BorderLayout.CENTER);
+
+    }
+
+    public void stateChanged(ChangeEvent e) {
+        int value = linewidthSlider.getValue();
+        linewidthLabel.setText(String.valueOf(value));
+        this.model.currentLinewidth = value;
     }
 
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == rectangleB) model.currentFigure = "Rectangle";
-        if (e.getSource() == fillRectangleB) model.currentFigure = "fillRectangle";
-        if (e.getSource() == ovalB) model.currentFigure = "Oval";
-        if (e.getSource() == fillOvalB) model.currentFigure = "fillOval";
-        if (e.getSource() == lineB) model.currentFigure = "Line";
-        if (e.getSource() == strokeB) model.currentFigure = "Stroke";
+        if (e.getSource() == rectangleB)
+            model.currentFigure = "Rectangle";
+        if (e.getSource() == fillRectangleB)
+            model.currentFigure = "fillRectangle";
+        if (e.getSource() == ovalB)
+            model.currentFigure = "Oval";
+        if (e.getSource() == fillOvalB)
+            model.currentFigure = "fillOval";
+        if (e.getSource() == lineB)
+            model.currentFigure = "Line";
+        if (e.getSource() == strokeB)
+            model.currentFigure = "Stroke";
     }
 }
 
@@ -366,8 +411,10 @@ class UndoRedoPanel extends JPanel implements ActionListener {
     }
 
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == undoB) this.model.cnt = Math.max(0, this.model.cnt - 1);
-        if (e.getSource() == redoB) this.model.cnt = Math.min(this.model.max_cnt, this.model.cnt + 1);
+        if (e.getSource() == undoB)
+            this.model.cnt = Math.max(0, this.model.cnt - 1);
+        if (e.getSource() == redoB)
+            this.model.cnt = Math.min(this.model.max_cnt, this.model.cnt + 1);
         this.view.repaint();
     }
 }
@@ -383,7 +430,6 @@ class DrawFrame extends JFrame {
     UndoRedoPanel undoRedo;
     DrawController cont;
     JTabbedPane tabbedpane;
-
 
     public DrawFrame() {
         model = new DrawModel();
