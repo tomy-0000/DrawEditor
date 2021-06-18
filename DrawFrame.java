@@ -114,6 +114,31 @@ class LineFigure extends Figure {
     }
 }
 
+class StrokeFigure extends Figure {
+    protected ArrayList<Integer> strokeHistory;
+
+    public StrokeFigure(int x, int y, int w, int h, Color c) {
+        super(x, y, w, h, c);
+        strokeHistory = new ArrayList<Integer>();
+        strokeHistory.add(x);
+        strokeHistory.add(y);
+        // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
+        // superで親のコンストラクタを呼び出すだけ．
+    }
+
+    public void reshape(int x1, int y1, int x2, int y2) {
+        strokeHistory.add(x2);
+        strokeHistory.add(y2);
+    }
+
+    public void draw(Graphics g) {
+        g.setColor(color);
+        for (int i = 2; i < this.strokeHistory.size(); i += 2) {
+            g.drawLine(strokeHistory.get(i - 2), strokeHistory.get(i - 1), strokeHistory.get(i), strokeHistory.get(i + 1));
+        }
+    }
+}
+
 ////////////////////////////////////////////////
 // Model (M)
 
@@ -147,6 +172,7 @@ class DrawModel extends Observable {
         if (this.currentFigure == "Oval") f = new OvalFigure(x, y, 0, 0, currentColor);
         if (this.currentFigure == "fillOval") f = new FillOvalFigure(x, y, 0, 0, currentColor);
         if (this.currentFigure == "Line") f = new LineFigure(x, y, 0, 0, currentColor);
+        if (this.currentFigure == "Stroke") f = new StrokeFigure(x, y, 0, 0, currentColor);
         fig.add(this.cnt, f);
         this.cnt += 1;
         drawingFigure = f;
@@ -282,7 +308,7 @@ class ColorSelectPanel extends JPanel implements ChangeListener, ActionListener 
 }
 
 class ShapeSelectPanel extends JPanel implements ActionListener {
-    JButton rectangleB, fillRectangleB, ovalB, fillOvalB, lineB;
+    JButton rectangleB, fillRectangleB, ovalB, fillOvalB, lineB, strokeB;
     JPanel allP;
     DrawModel model;
 
@@ -293,18 +319,21 @@ class ShapeSelectPanel extends JPanel implements ActionListener {
         ovalB = new JButton("Oval");
         fillOvalB = new JButton("fillOval");
         lineB = new JButton("Line");
+        strokeB = new JButton("Stroke");
 
         rectangleB.addActionListener(this);
         fillRectangleB.addActionListener(this);
         ovalB.addActionListener(this);
         fillOvalB.addActionListener(this);
         lineB.addActionListener(this);
+        strokeB.addActionListener(this);
 
         this.add(rectangleB);
         this.add(fillRectangleB);
         this.add(ovalB);
         this.add(fillOvalB);
         this.add(lineB);
+        this.add(strokeB);
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -313,6 +342,7 @@ class ShapeSelectPanel extends JPanel implements ActionListener {
         if (e.getSource() == ovalB) model.currentFigure = "Oval";
         if (e.getSource() == fillOvalB) model.currentFigure = "fillOval";
         if (e.getSource() == lineB) model.currentFigure = "Line";
+        if (e.getSource() == strokeB) model.currentFigure = "Stroke";
     }
 }
 
