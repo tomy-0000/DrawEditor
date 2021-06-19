@@ -1,8 +1,11 @@
 import java.awt.*;
+import java.awt.image.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 import java.util.*;
+import javax.imageio.*;
+import java.io.*;
 
 // 描画した図形を記録する Figure クラス (継承して利用する)
 class Figure {
@@ -236,10 +239,38 @@ class ViewPanel extends JPanel implements Observer {
             Figure f = fig.get(i);
             f.draw(g);
         }
+        SavePngHistory tmp = new SavePngHistory(model, this);
+        tmp.save();
     }
 
     public void update(Observable o, Object arg) {
         repaint();
+    }
+}
+
+class SavePngHistory {
+    protected DrawModel model;
+    protected ViewPanel view;
+
+    public SavePngHistory(DrawModel m, ViewPanel v) {
+        this.model = m;
+        this.view = v;
+    }
+
+    public void save() {
+        Dimension rv = this.view.getSize();
+        BufferedImage saveImage = new BufferedImage(rv.width, rv.height, BufferedImage.TYPE_3BYTE_BGR);
+        Graphics2D g2 = saveImage.createGraphics();
+        File output = new File("output.png");
+        ArrayList<Figure> fig = model.getFigures();
+        for (int i = 0; i < this.model.cnt; i++) {
+            Figure f = fig.get(i);
+            f.draw(g2);
+        }
+        try {
+            ImageIO.write(saveImage, "png", output);
+         } catch(IOException log) {
+         }
     }
 }
 
@@ -430,6 +461,7 @@ class DrawFrame extends JFrame {
     UndoRedoPanel undoRedo;
     DrawController cont;
     JTabbedPane tabbedpane;
+    SavePngHistory save;
 
     public DrawFrame() {
         model = new DrawModel();
@@ -437,6 +469,7 @@ class DrawFrame extends JFrame {
         view = new ViewPanel(model, cont);
         colorSelect = new ColorSelectPanel(model);
         shapeSelect = new ShapeSelectPanel(model);
+        save = new SavePngHistory(model, view);
         undoRedo = new UndoRedoPanel(model, view);
         tabbedpane = new JTabbedPane();
         tabbedpane.addTab("Color", colorSelect);
