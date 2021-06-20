@@ -6,12 +6,14 @@ import torchvision
 import torchvision.transforms as transforms
 from tqdm import tqdm
 
-trainset = torchvision.datasets.MNIST(root='./data',
+trainset = torchvision.datasets.EMNIST(root='./data',
+                                        split="digits",
                                         train=True,
                                         download=True,
                                         transform=transforms.ToTensor())
 
-testset = torchvision.datasets.MNIST(root='./data',
+testset = torchvision.datasets.EMNIST(root='./data',
+                                        split="digits",
                                         train=False,
                                         download=True,
                                         transform=transforms.ToTensor())
@@ -57,33 +59,22 @@ for i in tqdm(range(2)):
             optimizer.zero_grad()
 
             with torch.set_grad_enabled(phase == 'train'):
+                inputs = torch.where(inputs > 0, 1.0, 0.0)
+                inputs = inputs.permute(0, 1, 3, 2)
                 outputs = net(inputs)
 
-                # 損失を計算
                 loss = criterion(outputs, labels)
 
-                # ラベルを予測
                 _, preds = torch.max(outputs, 1)
 
-                # 訓練時はバックプロパゲーション
                 if phase == 'train':
-                    # 逆伝搬の計算
                     loss.backward()
-                    # パラメータの更新
                     optimizer.step()
 
-                # イテレーション結果の計算
-                # lossの合計を更新
-                # PyTorchの仕様上各バッチ内での平均のlossが計算される。
-                # データ数を掛けることで平均から合計に変換をしている。
-                # 損失和は「全データの損失/データ数」で計算されるため、
-                # 平均のままだと損失和を求めることができないため。
                 epoch_loss += loss.item() * inputs.size(0)
 
-                # 正解数の合計を更新
                 epoch_corrects += torch.sum(preds == labels.data)
 
-        # epochごとのlossと正解率を表示
         epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
         epoch_acc = epoch_corrects.double() / len(dataloaders_dict[phase].dataset)
 
