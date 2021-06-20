@@ -238,6 +238,22 @@ class SavePngHistory {
         File output = new File("output.png");
         Graphics2D g2 = saveImage.createGraphics();
         ArrayList<Figure> fig = model.getFigures();
+        ObjectOutput out = null;
+        try {
+            out = new ObjectOutputStream(new FileOutputStream("history.obj"));
+            out.writeObject(fig);
+            out.flush();
+        }catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
+            try {
+                if (out != null) {
+                    out.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         g2.setPaint(Color.white);
         g2.fillRect(0, 0, rv.width, rv.height);
         for (int i = 0; i < this.model.cnt; i++) {
@@ -464,15 +480,15 @@ class PredictPanel extends JPanel implements ActionListener {
         double[] img_arr = new double[28 * 28];
         for (int i = 0; i < 28 * 28; ++i) {
             Color c = new Color(resizedImg.getRGB(i % 28, i / 28));
-            img_arr[i] = c.getRed() + c.getGreen() + c.getBlue() == 255*3 ? 0.0 : 1.0;
+            img_arr[i] = c.getRed() + c.getGreen() + c.getBlue() == 255 * 3 ? 0.0 : 1.0;
         }
         double[] prob = new double[10];
         double softmax_denominator = 0.0;
         int max_idx = 0;
         for (int i = 0; i < 10; ++i) {
             double s = weight[i][0];
-            for (int j = 0; j < 28*28; ++j) {
-                s += img_arr[j]*weight[i][j + 1];
+            for (int j = 0; j < 28 * 28; ++j) {
+                s += img_arr[j] * weight[i][j + 1];
             }
             prob[i] = s;
             max_idx = prob[i] > prob[max_idx] ? i : max_idx;
@@ -482,9 +498,9 @@ class PredictPanel extends JPanel implements ActionListener {
             prob[i] -= minus;
             softmax_denominator += Math.exp(prob[i]);
         }
-        double result_prob = Math.exp(prob[max_idx])/softmax_denominator;
-        predictLabel.setText("Digit: "+String.valueOf(max_idx));
-        predictProbaLabel.setText(", Probability: "+String.valueOf(result_prob));
+        double result_prob = Math.exp(prob[max_idx]) / softmax_denominator;
+        predictLabel.setText("Digit: " + String.valueOf(max_idx));
+        predictProbaLabel.setText(", Probability: " + String.valueOf(result_prob));
     }
 }
 
