@@ -3,6 +3,9 @@ import java.awt.image.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
+
+import jdk.jshell.spi.ExecutionControl.ExecutionControlException;
+
 import java.util.*;
 import javax.imageio.*;
 import java.io.*;
@@ -249,20 +252,42 @@ class ViewPanel extends JPanel implements Observer {
 class SavePngHistory {
     protected DrawModel model;
     protected ViewPanel view;
+    protected double[][] weight;
 
     public SavePngHistory(DrawModel m, ViewPanel v) {
         this.model = m;
         this.view = v;
+        this.weight = new double[10][28 * 28 + 1];
+        BufferedReader br = null;
+        try {
+            File file = new File("./weight.txt");
+            br = new BufferedReader(new FileReader(file));
+            String line;
+            String[] data;
+            int i = 0;
+            while ((line = br.readLine()) != null) {
+                data = line.split(",");
+                for (int j = 0; j < data.length; ++j)
+                    weight[i][j] = Double.parseDouble(data[j]);
+                i++;
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
+            try {
+                if (br != null) {
+                    br.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
-    public void save(Boolean isPredict) {
+    public void save() {
         Dimension rv = this.view.getSize();
         BufferedImage saveImage = new BufferedImage(rv.width, rv.height, BufferedImage.TYPE_3BYTE_BGR);
-        File output;
-        if (isPredict)
-            output = new File("tmp.png");
-        else
-            output = new File("output.png");
+        File output = new File("output.png");
         Graphics2D g2 = saveImage.createGraphics();
         ArrayList<Figure> fig = model.getFigures();
         g2.setPaint(Color.white);
@@ -273,24 +298,57 @@ class SavePngHistory {
         }
         try {
             ImageIO.write(saveImage, "png", output);
-        } catch (IOException log) {
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 
-    public void resizeForPredict() {
-        BufferedImage original = null;
-        try{
-            original = ImageIO.read(new File("tmp.png"));
-        } catch (IOException log) {
+    public void predict() {
+        Dimension rv = this.view.getSize();
+        BufferedImage originalImg = new BufferedImage(rv.width, rv.height, BufferedImage.TYPE_3BYTE_BGR);
+        Graphics2D g2 = originalImg.createGraphics();
+        ArrayList<Figure> fig = model.getFigures();
+        g2.setPaint(Color.white);
+        g2.fillRect(0, 0, rv.width, rv.height);
+        for (int i = 0; i < this.model.cnt; i++) {
+            Figure f = fig.get(i);
+            f.draw(g2);
         }
-        BufferedImage saveImage = new BufferedImage(28, 28, BufferedImage.TYPE_3BYTE_BGR);
-        File output = new File("resized_for_predict.png");
-        Graphics2D g2 = saveImage.createGraphics();
-        g2.drawImage(original.getScaledInstance(28, 28, Image.SCALE_AREA_AVERAGING) ,0, 0, 28, 28, null);
+        BufferedImage resizedImg = new BufferedImage(28, 28, BufferedImage.TYPE_3BYTE_BGR);
+        resizedImg.createGraphics().drawImage(originalImg.getScaledInstance(28, 28, Image.SCALE_AREA_AVERAGING), 0, 0,
+                28, 28, null);
+        File output = new File("tmp.png");
         try {
-            ImageIO.write(saveImage, "png", output);
-        } catch (IOException log) {
+            ImageIO.write(resizedImg, "png", output);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
+        double[] img_arr = new double[28 * 28];
+        for (int i = 0; i < 28 * 28; ++i) {
+            Color c = new Color(resizedImg.getRGB(i % 28, i / 28));
+            img_arr[i] = c.getRed() + c.getGreen() + c.getBlue() == 255*3 ? 0.0 : 1.0;
+
+            System.out.println(img_arr[i]);
+        }
+        double[] prob = new double[10];
+        double softmax_denominator = 0.0;
+        int max_idx = 0;
+        for (int i = 0; i < 10; ++i) {
+            double s = weight[i][0];
+            for (int j = 0; j < 28*28; ++j) {
+                s += img_arr[j]*weight[i][j + 1];
+            }
+            prob[i] = s;
+            max_idx = prob[i] > prob[max_idx] ? i : max_idx;
+        }
+        double minus = prob[max_idx];
+        for (int i = 0; i < 10; ++i) {
+            prob[i] -= minus;
+            softmax_denominator += Math.exp(prob[i]);
+        }
+        double result_prob = Math.exp(prob[max_idx])/softmax_denominator;
+        System.out.println(max_idx);
+        System.out.println(result_prob);
     }
 }
 
@@ -405,7 +463,7 @@ class ShapeSelectPanel extends JPanel implements ChangeListener, ActionListener 
         strokeB.addActionListener(this);
 
         linewidthPanel = new JPanel();
-        linewidthSlider = new JSlider(1, 20, 1);
+        linewidthSlider = new JSlider(1, 40, 1);
         linewidthSlider.addChangeListener(this);
         linewidthLabel = new JLabel("1");
         linewidthPanel.add(new JLabel("linewidth"), BorderLayout.WEST);
@@ -478,10 +536,9 @@ class UndoRedoSavePredictPanel extends JPanel implements ActionListener {
         if (e.getSource() == redoB)
             this.model.cnt = Math.min(this.model.max_cnt, this.model.cnt + 1);
         if (e.getSource() == saveB)
-            this.save.save(false);
+            this.save.save();
         if (e.getSource() == predictB) {
-            this.save.save(true);
-            this.save.resizeForPredict();
+            this.save.predict();
         }
         this.view.repaint();
     }
