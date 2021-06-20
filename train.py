@@ -4,23 +4,17 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
-import pandas as pd
-import numpy as np
 from tqdm import tqdm
-
-transform = transforms.Compose(
-    [transforms.ToTensor(),
-     transforms.Normalize((0.5, ), (0.5, ))])
 
 trainset = torchvision.datasets.MNIST(root='./data',
                                         train=True,
                                         download=True,
-                                        transform=transform)
+                                        transform=transforms.ToTensor())
 
 testset = torchvision.datasets.MNIST(root='./data',
                                         train=False,
                                         download=True,
-                                        transform=transform)
+                                        transform=transforms.ToTensor())
 
 trainloader = torch.utils.data.DataLoader(trainset,
                                             batch_size=100,
