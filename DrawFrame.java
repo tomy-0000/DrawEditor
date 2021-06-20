@@ -3,25 +3,21 @@ import java.awt.image.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
-
-import jdk.jshell.spi.ExecutionControl.ExecutionControlException;
-
 import java.util.*;
 import javax.imageio.*;
 import java.io.*;
 
-// 描画した図形を記録する Figure クラス (継承して利用する)
 class Figure {
     protected int x, y, width, height, linewidth;
     protected Color color;
 
     public Figure(int x, int y, int w, int h, Color c, int l) {
         this.x = x;
-        this.y = y; // this.x, this.y はインスタンス変数．
+        this.y = y;
         width = w;
-        height = h; // ローカル変数で同名の変数がある場合は，this
+        height = h;
         linewidth = l;
-        color = c; // を付けると，インスタンス変数を指す．
+        color = c;
     }
 
     public void setSize(int w, int h) {
@@ -50,8 +46,6 @@ class Figure {
 class RectangleFigure extends Figure {
     public RectangleFigure(int x, int y, int w, int h, Color c, int l) {
         super(x, y, w, h, c, l);
-        // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
-        // superで親のコンストラクタを呼び出すだけ．
     }
 
     public void draw(Graphics g) {
@@ -65,8 +59,6 @@ class RectangleFigure extends Figure {
 class FillRectangleFigure extends Figure {
     public FillRectangleFigure(int x, int y, int w, int h, Color c, int l) {
         super(x, y, w, h, c, l);
-        // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
-        // superで親のコンストラクタを呼び出すだけ．
     }
 
     public void draw(Graphics g) {
@@ -80,8 +72,6 @@ class FillRectangleFigure extends Figure {
 class OvalFigure extends Figure {
     public OvalFigure(int x, int y, int w, int h, Color c, int l) {
         super(x, y, w, h, c, l);
-        // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
-        // superで親のコンストラクタを呼び出すだけ．
     }
 
     public void draw(Graphics g) {
@@ -95,8 +85,6 @@ class OvalFigure extends Figure {
 class FillOvalFigure extends Figure {
     public FillOvalFigure(int x, int y, int w, int h, Color c, int l) {
         super(x, y, w, h, c, l);
-        // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
-        // superで親のコンストラクタを呼び出すだけ．
     }
 
     public void draw(Graphics g) {
@@ -110,8 +98,6 @@ class FillOvalFigure extends Figure {
 class LineFigure extends Figure {
     public LineFigure(int x, int y, int w, int h, Color c, int l) {
         super(x, y, w, h, c, l);
-        // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
-        // superで親のコンストラクタを呼び出すだけ．
     }
 
     public void reshape(int x1, int y1, int x2, int y2) {
@@ -139,8 +125,6 @@ class StrokeFigure extends Figure {
         strokeHistory = new ArrayList<Integer>();
         strokeHistory.add(x);
         strokeHistory.add(y);
-        // 引数付きのコンストラクタは継承されないので，コンストラクタを定義．
-        // superで親のコンストラクタを呼び出すだけ．
     }
 
     public void reshape(int x1, int y1, int x2, int y2) {
@@ -159,17 +143,13 @@ class StrokeFigure extends Figure {
     }
 }
 
-////////////////////////////////////////////////
-// Model (M)
-
-// modelは java.util.Observableを継承する．Viewに監視される．
 class DrawModel extends Observable {
     protected ArrayList<Figure> fig;
     protected Figure drawingFigure;
     protected Color currentColor;
     protected int currentLinewidth;
     protected String currentFigure;
-    int cnt = 0, max_cnt = 0; // undo, redo用
+    int cnt = 0, max_cnt = 0;
 
     public DrawModel() {
         fig = new ArrayList<Figure>();
@@ -218,12 +198,6 @@ class DrawModel extends Observable {
     }
 }
 
-////////////////////////////////////////////////
-// View (V)
-
-// Viewは，Observerをimplementsする．Modelを監視して，
-// モデルが更新されたupdateする．実際には，Modelから
-// update が呼び出される．
 class ViewPanel extends JPanel implements Observer {
     protected DrawModel model;
 
@@ -252,36 +226,10 @@ class ViewPanel extends JPanel implements Observer {
 class SavePngHistory {
     protected DrawModel model;
     protected ViewPanel view;
-    protected double[][] weight;
 
     public SavePngHistory(DrawModel m, ViewPanel v) {
         this.model = m;
         this.view = v;
-        this.weight = new double[10][28 * 28 + 1];
-        BufferedReader br = null;
-        try {
-            File file = new File("./weight.txt");
-            br = new BufferedReader(new FileReader(file));
-            String line;
-            String[] data;
-            int i = 0;
-            while ((line = br.readLine()) != null) {
-                data = line.split(",");
-                for (int j = 0; j < data.length; ++j)
-                    weight[i][j] = Double.parseDouble(data[j]);
-                i++;
-            }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        } finally {
-            try {
-                if (br != null) {
-                    br.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     public void save() {
@@ -302,58 +250,10 @@ class SavePngHistory {
             System.out.println(e.getMessage());
         }
     }
-
-    public void predict() {
-        Dimension rv = this.view.getSize();
-        BufferedImage originalImg = new BufferedImage(rv.width, rv.height, BufferedImage.TYPE_3BYTE_BGR);
-        Graphics2D g2 = originalImg.createGraphics();
-        ArrayList<Figure> fig = model.getFigures();
-        g2.setPaint(Color.white);
-        g2.fillRect(0, 0, rv.width, rv.height);
-        for (int i = 0; i < this.model.cnt; i++) {
-            Figure f = fig.get(i);
-            f.draw(g2);
-        }
-        BufferedImage resizedImg = new BufferedImage(28, 28, BufferedImage.TYPE_3BYTE_BGR);
-        resizedImg.createGraphics().drawImage(originalImg.getScaledInstance(28, 28, Image.SCALE_AREA_AVERAGING), 0, 0,
-                28, 28, null);
-        File output = new File("tmp.png");
-        try {
-            ImageIO.write(resizedImg, "png", output);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-        double[] img_arr = new double[28 * 28];
-        for (int i = 0; i < 28 * 28; ++i) {
-            Color c = new Color(resizedImg.getRGB(i % 28, i / 28));
-            img_arr[i] = c.getRed() + c.getGreen() + c.getBlue() == 255*3 ? 0.0 : 1.0;
-
-            System.out.println(img_arr[i]);
-        }
-        double[] prob = new double[10];
-        double softmax_denominator = 0.0;
-        int max_idx = 0;
-        for (int i = 0; i < 10; ++i) {
-            double s = weight[i][0];
-            for (int j = 0; j < 28*28; ++j) {
-                s += img_arr[j]*weight[i][j + 1];
-            }
-            prob[i] = s;
-            max_idx = prob[i] > prob[max_idx] ? i : max_idx;
-        }
-        double minus = prob[max_idx];
-        for (int i = 0; i < 10; ++i) {
-            prob[i] -= minus;
-            softmax_denominator += Math.exp(prob[i]);
-        }
-        double result_prob = Math.exp(prob[max_idx])/softmax_denominator;
-        System.out.println(max_idx);
-        System.out.println(result_prob);
-    }
 }
 
 class ColorSelectPanel extends JPanel implements ChangeListener, ActionListener {
-    // protected DrawModel model;
+
     JPanel redP, greenP, blueP, currentColorP, chooserAndCurrentColorP, allP;
     JSlider redSlider, greenSlider, blueSlider;
     JLabel redLabel, greenLabel, blueLabel;
@@ -430,7 +330,7 @@ class ColorSelectPanel extends JPanel implements ChangeListener, ActionListener 
 
     public void actionPerformed(ActionEvent e) {
         JColorChooser colorchooser = new JColorChooser();
-        Color color = colorchooser.showDialog(this, "色の選択", Color.white);
+        Color color = colorchooser.showDialog(this, "Choose Color", Color.white);
         this.model.currentColor = color;
         this.redSlider.setValue(color.getRed());
         this.greenSlider.setValue(color.getGreen());
@@ -502,13 +402,99 @@ class ShapeSelectPanel extends JPanel implements ChangeListener, ActionListener 
     }
 }
 
-class UndoRedoSavePredictPanel extends JPanel implements ActionListener {
-    JButton undoB, redoB, saveB, predictB;
+class PredictPanel extends JPanel implements ActionListener {
+    JLabel predictLabel, predictProbaLabel;
+    JButton predictB;
+    DrawModel model;
+    ViewPanel view;
+    protected double[][] weight;
+
+    public PredictPanel(DrawModel model, ViewPanel view) {
+        this.model = model;
+        this.view = view;
+        predictB = new JButton("Predict");
+        predictB.addActionListener(this);
+        predictLabel = new JLabel("Digit: -");
+        predictProbaLabel = new JLabel("Probability: -");
+        this.add(predictB);
+        this.add(predictLabel);
+        this.add(predictProbaLabel);
+
+        this.weight = new double[10][28 * 28 + 1];
+        BufferedReader br = null;
+        try {
+            File file = new File("./weight.txt");
+            br = new BufferedReader(new FileReader(file));
+            String line;
+            String[] data;
+            int i = 0;
+            while ((line = br.readLine()) != null) {
+                data = line.split(",");
+                for (int j = 0; j < data.length; ++j)
+                    weight[i][j] = Double.parseDouble(data[j]);
+                i++;
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
+            try {
+                if (br != null) {
+                    br.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        Dimension rv = this.view.getSize();
+        BufferedImage originalImg = new BufferedImage(rv.width, rv.height, BufferedImage.TYPE_3BYTE_BGR);
+        Graphics2D g2 = originalImg.createGraphics();
+        ArrayList<Figure> fig = model.getFigures();
+        g2.setPaint(Color.white);
+        g2.fillRect(0, 0, rv.width, rv.height);
+        for (int i = 0; i < this.model.cnt; i++) {
+            Figure f = fig.get(i);
+            f.draw(g2);
+        }
+        BufferedImage resizedImg = new BufferedImage(28, 28, BufferedImage.TYPE_3BYTE_BGR);
+        resizedImg.createGraphics().drawImage(originalImg.getScaledInstance(28, 28, Image.SCALE_AREA_AVERAGING), 0, 0,
+                28, 28, null);
+        double[] img_arr = new double[28 * 28];
+        for (int i = 0; i < 28 * 28; ++i) {
+            Color c = new Color(resizedImg.getRGB(i % 28, i / 28));
+            img_arr[i] = c.getRed() + c.getGreen() + c.getBlue() == 255*3 ? 0.0 : 1.0;
+        }
+        double[] prob = new double[10];
+        double softmax_denominator = 0.0;
+        int max_idx = 0;
+        for (int i = 0; i < 10; ++i) {
+            double s = weight[i][0];
+            for (int j = 0; j < 28*28; ++j) {
+                s += img_arr[j]*weight[i][j + 1];
+            }
+            prob[i] = s;
+            max_idx = prob[i] > prob[max_idx] ? i : max_idx;
+        }
+        double minus = prob[max_idx];
+        for (int i = 0; i < 10; ++i) {
+            prob[i] -= minus;
+            softmax_denominator += Math.exp(prob[i]);
+        }
+        double result_prob = Math.exp(prob[max_idx])/softmax_denominator;
+        predictLabel.setText("Digit: "+String.valueOf(max_idx));
+        predictProbaLabel.setText(", Probability: "+String.valueOf(result_prob));
+    }
+}
+
+class UndoRedoSavePanel extends JPanel implements ActionListener {
+    JButton undoB, redoB, saveB;
     SavePngHistory save;
     DrawModel model;
     ViewPanel view;
 
-    public UndoRedoSavePredictPanel(DrawModel model, ViewPanel view) {
+    public UndoRedoSavePanel(DrawModel model, ViewPanel view) {
         this.save = new SavePngHistory(model, view);
         this.model = model;
         this.view = view;
@@ -524,10 +510,6 @@ class UndoRedoSavePredictPanel extends JPanel implements ActionListener {
         saveB = new JButton("Save");
         saveB.addActionListener(this);
         this.add(saveB);
-
-        predictB = new JButton("Predict");
-        predictB.addActionListener(this);
-        this.add(predictB);
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -537,22 +519,17 @@ class UndoRedoSavePredictPanel extends JPanel implements ActionListener {
             this.model.cnt = Math.min(this.model.max_cnt, this.model.cnt + 1);
         if (e.getSource() == saveB)
             this.save.save();
-        if (e.getSource() == predictB) {
-            this.save.predict();
-        }
         this.view.repaint();
     }
 }
 
-//////////////////////////////////////////////////
-// Main class
-// (GUIを組み立てているので，view の一部と考えてもよい)
 class DrawFrame extends JFrame {
     DrawModel model;
     ViewPanel view;
     ColorSelectPanel colorSelect;
     ShapeSelectPanel shapeSelect;
-    UndoRedoSavePredictPanel undoRedoSave;
+    PredictPanel predict;
+    UndoRedoSavePanel undoRedoSave;
     DrawController cont;
     JTabbedPane tabbedpane;
     SavePngHistory save;
@@ -563,11 +540,13 @@ class DrawFrame extends JFrame {
         view = new ViewPanel(model, cont);
         colorSelect = new ColorSelectPanel(model);
         shapeSelect = new ShapeSelectPanel(model);
+        predict = new PredictPanel(model, view);
         save = new SavePngHistory(model, view);
-        undoRedoSave = new UndoRedoSavePredictPanel(model, view);
+        undoRedoSave = new UndoRedoSavePanel(model, view);
         tabbedpane = new JTabbedPane();
         tabbedpane.addTab("Color", colorSelect);
         tabbedpane.addTab("Shape", shapeSelect);
+        tabbedpane.addTab("Predict", predict);
         tabbedpane.setSelectedIndex(0);
 
         this.setBackground(Color.black);
@@ -584,9 +563,6 @@ class DrawFrame extends JFrame {
         new DrawFrame();
     }
 }
-
-////////////////////////////////////////////////
-// Controller (C)
 
 class DrawController implements MouseListener, MouseMotionListener {
     protected DrawModel model;
