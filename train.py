@@ -51,30 +51,21 @@ for i in tqdm(range(2)):
             net.train()
         else:
             net.eval()
-
         epoch_loss = 0.0
         epoch_corrects = 0
-
         for inputs, labels in dataloaders_dict[phase]:
             optimizer.zero_grad()
-
             with torch.set_grad_enabled(phase == 'train'):
                 inputs = torch.where(inputs > 0, 1.0, 0.0)
                 inputs = inputs.permute(0, 1, 3, 2)
                 outputs = net(inputs)
-
                 loss = criterion(outputs, labels)
-
                 _, preds = torch.max(outputs, 1)
-
                 if phase == 'train':
                     loss.backward()
                     optimizer.step()
-
                 epoch_loss += loss.item() * inputs.size(0)
-
                 epoch_corrects += torch.sum(preds == labels.data)
-
         epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
         epoch_acc = epoch_corrects.double() / len(dataloaders_dict[phase].dataset)
 
