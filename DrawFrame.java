@@ -500,7 +500,7 @@ class PredictPanel extends JPanel implements ActionListener {
         }
         double result_prob = Math.exp(prob[max_idx]) / softmax_denominator;
         predictLabel.setText("Digit: " + String.valueOf(max_idx));
-        predictProbaLabel.setText(", Probability: " + String.valueOf(result_prob));
+        predictProbaLabel.setText(", Probability: " + String.valueOf((int)(result_prob*100)) + "%");
     }
 }
 
