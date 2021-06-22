@@ -7,7 +7,7 @@ import java.util.*;
 import javax.imageio.*;
 import java.io.*;
 
-class Figure {
+class Figure implements Serializable {
     protected int x, y, width, height, linewidth;
     protected Color color;
 
@@ -149,7 +149,7 @@ class DrawModel extends Observable {
     protected Color currentColor;
     protected int currentLinewidth;
     protected String currentFigure;
-    int cnt = 0, max_cnt = 0;
+    protected int cnt = 0, maxCnt = 0;
 
     public DrawModel() {
         fig = new ArrayList<Figure>();
@@ -183,7 +183,7 @@ class DrawModel extends Observable {
             f = new StrokeFigure(x, y, 0, 0, currentColor, currentLinewidth);
         fig.add(this.cnt, f);
         this.cnt += 1;
-        this.max_cnt = this.cnt;
+        this.maxCnt = this.cnt;
         drawingFigure = f;
         setChanged();
         notifyObservers();
@@ -238,10 +238,11 @@ class SavePngHistory {
         File output = new File("output.png");
         Graphics2D g2 = saveImage.createGraphics();
         ArrayList<Figure> fig = model.getFigures();
+        SavedObj obj = new SavedObj(fig, model.cnt, model.maxCnt);
         ObjectOutput out = null;
         try {
             out = new ObjectOutputStream(new FileOutputStream("history.obj"));
-            out.writeObject(fig);
+            out.writeObject(obj);
             out.flush();
         }catch (Exception e) {
             System.out.println(e.getMessage());
@@ -504,13 +505,23 @@ class PredictPanel extends JPanel implements ActionListener {
     }
 }
 
-class UndoRedoSavePanel extends JPanel implements ActionListener {
-    JButton undoB, redoB, saveB;
+class SavedObj implements Serializable {
+    ArrayList<Figure> fig;
+    int cnt, maxCnt;
+    SavedObj(ArrayList<Figure> fig, int cnt, int maxCnt) {
+        this.fig = fig;
+        this.cnt = cnt;
+        this.maxCnt = maxCnt;
+    }
+}
+
+class UndoRedoSaveLoadPanel extends JPanel implements ActionListener {
+    JButton undoB, redoB, saveB, loadB;
     SavePngHistory save;
     DrawModel model;
     ViewPanel view;
 
-    public UndoRedoSavePanel(DrawModel model, ViewPanel view) {
+    public UndoRedoSaveLoadPanel(DrawModel model, ViewPanel view) {
         this.save = new SavePngHistory(model, view);
         this.model = model;
         this.view = view;
@@ -526,15 +537,29 @@ class UndoRedoSavePanel extends JPanel implements ActionListener {
         saveB = new JButton("Save");
         saveB.addActionListener(this);
         this.add(saveB);
+
+        loadB = new JButton("Load");
+        loadB.addActionListener(this);
+        this.add(loadB);
     }
 
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == undoB)
             this.model.cnt = Math.max(0, this.model.cnt - 1);
         if (e.getSource() == redoB)
-            this.model.cnt = Math.min(this.model.max_cnt, this.model.cnt + 1);
+            this.model.cnt = Math.min(this.model.maxCnt, this.model.cnt + 1);
         if (e.getSource() == saveB)
             this.save.save();
+        if (e.getSource() == loadB) {
+            try (ObjectInputStream in = new ObjectInputStream(new FileInputStream("history.obj"))) {
+                SavedObj obj = (SavedObj)in.readObject();
+                this.model.fig = obj.fig;
+                this.model.cnt = obj.cnt;
+                this.model.maxCnt = obj.maxCnt;
+            } catch (Exception err) {
+                err.printStackTrace();
+            };
+        }
         this.view.repaint();
     }
 }
@@ -545,7 +570,7 @@ class DrawFrame extends JFrame {
     ColorSelectPanel colorSelect;
     ShapeSelectPanel shapeSelect;
     PredictPanel predict;
-    UndoRedoSavePanel undoRedoSave;
+    UndoRedoSaveLoadPanel undoRedoSaveLoad;
     DrawController cont;
     JTabbedPane tabbedpane;
     SavePngHistory save;
@@ -558,7 +583,7 @@ class DrawFrame extends JFrame {
         shapeSelect = new ShapeSelectPanel(model);
         predict = new PredictPanel(model, view);
         save = new SavePngHistory(model, view);
-        undoRedoSave = new UndoRedoSavePanel(model, view);
+        undoRedoSaveLoad = new UndoRedoSaveLoadPanel(model, view);
         tabbedpane = new JTabbedPane();
         tabbedpane.addTab("Color", colorSelect);
         tabbedpane.addTab("Shape", shapeSelect);
@@ -570,7 +595,7 @@ class DrawFrame extends JFrame {
         this.setSize(750, 750);
         this.add(tabbedpane, BorderLayout.NORTH);
         this.add(view);
-        this.add(undoRedoSave, BorderLayout.SOUTH);
+        this.add(undoRedoSaveLoad, BorderLayout.SOUTH);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setVisible(true);
     }
