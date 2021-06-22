@@ -420,7 +420,7 @@ class ShapeSelectPanel extends JPanel implements ChangeListener, ActionListener 
 }
 
 class PredictPanel extends JPanel implements ActionListener {
-    JLabel predictLabel, predictProbaLabel;
+    JLabel predictLabel, predictProbaLabel, predictNoteLabel;
     JButton predictB;
     DrawModel model;
     ViewPanel view;
@@ -433,9 +433,12 @@ class PredictPanel extends JPanel implements ActionListener {
         predictB.addActionListener(this);
         predictLabel = new JLabel("Digit: -");
         predictProbaLabel = new JLabel("Probability: -");
+        predictNoteLabel = new JLabel("※ウィンドウを小さくしてください");
+        this.setLayout(new GridLayout(4, 1));
         this.add(predictB);
         this.add(predictLabel);
         this.add(predictProbaLabel);
+        this.add(predictNoteLabel);
 
         this.weight = new double[10][28 * 28 + 1];
         BufferedReader br = null;
@@ -501,7 +504,7 @@ class PredictPanel extends JPanel implements ActionListener {
         }
         double result_prob = Math.exp(prob[max_idx]) / softmax_denominator;
         predictLabel.setText("Digit: " + String.valueOf(max_idx));
-        predictProbaLabel.setText(", Probability: " + String.valueOf((int)(result_prob*100)) + "%");
+        predictProbaLabel.setText("Probability: " + String.valueOf((int)(result_prob*100)) + "%");
     }
 }
 
