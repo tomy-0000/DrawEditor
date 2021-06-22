@@ -8,12 +8,13 @@ import javax.imageio.*;
 import java.io.*;
 
 class Figure implements Serializable {
-    protected int x, y, width, height, linewidth;
+    protected int x, y, width, height, linewidth, originalY;
     protected Color color;
 
     public Figure(int x, int y, int w, int h, Color c, int l) {
         this.x = x;
         this.y = y;
+        this.originalY = y;
         width = w;
         height = h;
         linewidth = l;
@@ -28,6 +29,18 @@ class Figure implements Serializable {
     public void setLocation(int x, int y) {
         this.x = x;
         this.y = y;
+    }
+
+    public void setYLocation(int dy) {
+        this.y += dy;
+    }
+
+    public int getYLocation() {
+        return this.y;
+    }
+
+    public int getOriginalYLocation() {
+        return this.originalY;
     }
 
     public void reshape(int x1, int y1, int x2, int y2) {
@@ -132,6 +145,14 @@ class StrokeFigure extends Figure {
         strokeHistory.add(y2);
     }
 
+    public void setYLocation(int dy) {
+        for (int i = 1; i < strokeHistory.size(); i += 2) {
+            int y = strokeHistory.get(i);
+            strokeHistory.set(i, y + dy);
+        }
+        this.y += dy;
+    }
+
     public void draw(Graphics g) {
         g.setColor(color);
         Graphics2D g2 = (Graphics2D) g;
@@ -196,6 +217,22 @@ class DrawModel extends Observable {
             notifyObservers();
         }
     }
+
+    public int getCnt() {
+        return this.cnt;
+    }
+
+    public int getMaxCnt() {
+        return this.maxCnt;
+    }
+
+    public void setCnt(int cnt) {
+        this.cnt = cnt;
+    }
+
+    public void setMaxCnt(int maxCnt) {
+        this.maxCnt = maxCnt;
+    }
 }
 
 class ViewPanel extends JPanel implements Observer {
@@ -244,14 +281,14 @@ class SavePngHistory {
             out = new ObjectOutputStream(new FileOutputStream("history.obj"));
             out.writeObject(obj);
             out.flush();
-        }catch (Exception e) {
-            System.out.println(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             try {
                 if (out != null) {
                     out.close();
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -264,7 +301,7 @@ class SavePngHistory {
         try {
             ImageIO.write(saveImage, "png", output);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
     }
 }
@@ -394,7 +431,6 @@ class ShapeSelectPanel extends JPanel implements ChangeListener, ActionListener 
         this.add(lineB);
         this.add(strokeB);
         this.add(linewidthPanel, BorderLayout.CENTER);
-
     }
 
     public void stateChanged(ChangeEvent e) {
@@ -455,13 +491,13 @@ class PredictPanel extends JPanel implements ActionListener {
                 i++;
             }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         } finally {
             try {
                 if (br != null) {
                     br.close();
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -479,42 +515,95 @@ class PredictPanel extends JPanel implements ActionListener {
             f.draw(g2);
         }
         BufferedImage resizedImg = new BufferedImage(28, 28, BufferedImage.TYPE_3BYTE_BGR);
-        resizedImg.createGraphics().drawImage(originalImg.getScaledInstance(28, 28, Image.SCALE_AREA_AVERAGING), 0, 0,
-                28, 28, null);
-        double[] img_arr = new double[28 * 28];
+        resizedImg.createGraphics().drawImage(originalImg.getScaledInstance(28, 28, Image.SCALE_AREA_AVERAGING), 0, 0, 28, 28, null);
+        double[] imgArr = new double[28 * 28];
         for (int i = 0; i < 28 * 28; ++i) {
             Color c = new Color(resizedImg.getRGB(i % 28, i / 28));
-            img_arr[i] = c.getRed() + c.getGreen() + c.getBlue() == 255 * 3 ? 0.0 : 1.0;
+            imgArr[i] = c.getRed() + c.getGreen() + c.getBlue() == 255 * 3 ? 0.0 : 1.0;
         }
         double[] prob = new double[10];
-        double softmax_denominator = 0.0;
-        int max_idx = 0;
+        double softmaxDenominator = 0.0;
+        int maxIdx = 0;
         for (int i = 0; i < 10; ++i) {
             double s = weight[i][0];
             for (int j = 0; j < 28 * 28; ++j) {
-                s += img_arr[j] * weight[i][j + 1];
+                s += imgArr[j] * weight[i][j + 1];
             }
             prob[i] = s;
-            max_idx = prob[i] > prob[max_idx] ? i : max_idx;
+            maxIdx = prob[i] > prob[maxIdx] ? i : maxIdx;
         }
-        double minus = prob[max_idx];
+        double minus = prob[maxIdx];
         for (int i = 0; i < 10; ++i) {
             prob[i] -= minus;
-            softmax_denominator += Math.exp(prob[i]);
+            softmaxDenominator += Math.exp(prob[i]);
         }
-        double result_prob = Math.exp(prob[max_idx]) / softmax_denominator;
-        predictLabel.setText("Digit: " + String.valueOf(max_idx));
-        predictProbaLabel.setText("Probability: " + String.valueOf((int)(result_prob*100)) + "%");
+        double resultProb = Math.exp(prob[maxIdx]) / softmaxDenominator;
+        predictLabel.setText("Digit: " + String.valueOf(maxIdx));
+        predictProbaLabel.setText("Probability: " + String.valueOf((int) (resultProb * 100)) + "%");
     }
 }
 
 class SavedObj implements Serializable {
     ArrayList<Figure> fig;
     int cnt, maxCnt;
+
     SavedObj(ArrayList<Figure> fig, int cnt, int maxCnt) {
         this.fig = fig;
         this.cnt = cnt;
         this.maxCnt = maxCnt;
+    }
+}
+
+class UndoAnimeThread extends Thread {
+    DrawModel model;
+    Figure f;
+    int maxY;
+    ViewPanel view;
+
+    public UndoAnimeThread(DrawModel model, Figure f, ViewPanel view) {
+        this.model = model;
+        this.f = f;
+        this.view = view;
+        Dimension rv = this.view.getSize();
+        this.maxY = f.getOriginalYLocation() + rv.height;
+    }
+
+    public void run() {
+        while (this.f.getYLocation() < this.maxY) {
+            this.f.setYLocation(3);
+            this.view.repaint();
+            try {
+                Thread.sleep(1);
+            } catch (Exception e) {
+            }
+        }
+        // this.model.cnt = Math.max(0, this.model.cnt - 1);
+        this.model.setCnt(this.model.getCnt() - 1);
+    }
+}
+
+class RedoAnimeThread extends Thread {
+    DrawModel model;
+    Figure f;
+    int maxY;
+    ViewPanel view;
+
+    public RedoAnimeThread(DrawModel model, Figure f, ViewPanel view) {
+        this.model = model;
+        this.f = f;
+        this.view = view;
+    }
+
+    public void run() {
+        this.model.setCnt(this.model.getCnt() + 1);
+        while (this.f.getYLocation() > this.f.getOriginalYLocation()) {
+            this.f.setYLocation(-3);
+            this.view.repaint();
+            try {
+                Thread.sleep(1);
+            } catch (Exception e) {
+            }
+        }
     }
 }
 
@@ -547,23 +636,35 @@ class UndoRedoSaveLoadPanel extends JPanel implements ActionListener {
     }
 
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == undoB)
-            this.model.cnt = Math.max(0, this.model.cnt - 1);
-        if (e.getSource() == redoB)
-            this.model.cnt = Math.min(this.model.maxCnt, this.model.cnt + 1);
-        if (e.getSource() == saveB)
+        if (e.getSource() == undoB) {
+            if (0 < this.model.getCnt()) {
+                Figure f = this.model.getFigure(this.model.getCnt() - 1);
+                UndoAnimeThread undoAnime = new UndoAnimeThread(this.model, f, this.view);
+                undoAnime.start();
+            }
+        }
+        if (e.getSource() == redoB) {
+            if (this.model.getCnt() < this.model.getMaxCnt()) {
+                Figure f = this.model.getFigure(this.model.getCnt());
+                RedoAnimeThread redoAnime = new RedoAnimeThread(this.model, f, view);
+                redoAnime.start();
+            }
+        }
+        if (e.getSource() == saveB) {
             this.save.save();
+            this.view.repaint();
+        }
         if (e.getSource() == loadB) {
             try (ObjectInputStream in = new ObjectInputStream(new FileInputStream("history.obj"))) {
-                SavedObj obj = (SavedObj)in.readObject();
+                SavedObj obj = (SavedObj) in.readObject();
                 this.model.fig = obj.fig;
-                this.model.cnt = obj.cnt;
-                this.model.maxCnt = obj.maxCnt;
+                this.model.setCnt(obj.cnt);
+                this.model.setMaxCnt(obj.maxCnt);
             } catch (Exception err) {
                 err.printStackTrace();
-            };
+            }
+            this.view.repaint();
         }
-        this.view.repaint();
     }
 }
 
