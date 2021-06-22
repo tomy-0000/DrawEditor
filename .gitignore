@@ -1,3 +1,5 @@
 *.png
 data/
 *.class
+*.jar
+*.obj
