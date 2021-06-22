@@ -170,7 +170,7 @@ class DrawModel extends Observable {
     protected Color currentColor;
     protected int currentLinewidth;
     protected String currentFigure;
-    protected int cnt = 0, maxCnt = 0;
+    protected int cnt = 0, tmpCnt = 0, maxCnt = 0;
 
     public DrawModel() {
         fig = new ArrayList<Figure>();
@@ -204,6 +204,7 @@ class DrawModel extends Observable {
             f = new StrokeFigure(x, y, 0, 0, currentColor, currentLinewidth);
         fig.add(this.cnt, f);
         this.cnt += 1;
+        this.tmpCnt = this.cnt;
         this.maxCnt = this.cnt;
         drawingFigure = f;
         setChanged();
@@ -222,12 +223,20 @@ class DrawModel extends Observable {
         return this.cnt;
     }
 
+    public int getTmpCnt() {
+        return this.tmpCnt;
+    }
+
     public int getMaxCnt() {
         return this.maxCnt;
     }
 
     public void setCnt(int cnt) {
         this.cnt = cnt;
+    }
+
+    public void setTmpCnt(int tmpCnt) {
+        this.tmpCnt = tmpCnt;
     }
 
     public void setMaxCnt(int maxCnt) {
@@ -577,7 +586,6 @@ class UndoAnimeThread extends Thread {
             } catch (Exception e) {
             }
         }
-        // this.model.cnt = Math.max(0, this.model.cnt - 1);
         this.model.setCnt(this.model.getCnt() - 1);
     }
 }
@@ -636,29 +644,36 @@ class UndoRedoSaveLoadPanel extends JPanel implements ActionListener {
     }
 
     public void actionPerformed(ActionEvent e) {
+        int tmpCnt = this.model.getTmpCnt();
         if (e.getSource() == undoB) {
-            if (0 < this.model.getCnt()) {
-                Figure f = this.model.getFigure(this.model.getCnt() - 1);
+            if (0 < tmpCnt) {
+                this.model.setTmpCnt(tmpCnt - 1);
+                Figure f = this.model.getFigure(tmpCnt - 1);
                 UndoAnimeThread undoAnime = new UndoAnimeThread(this.model, f, this.view);
                 undoAnime.start();
             }
         }
+
         if (e.getSource() == redoB) {
-            if (this.model.getCnt() < this.model.getMaxCnt()) {
-                Figure f = this.model.getFigure(this.model.getCnt());
+            if (tmpCnt < this.model.getMaxCnt()) {
+                this.model.setTmpCnt(tmpCnt + 1);
+                Figure f = this.model.getFigure(tmpCnt);
                 RedoAnimeThread redoAnime = new RedoAnimeThread(this.model, f, view);
                 redoAnime.start();
             }
         }
+
         if (e.getSource() == saveB) {
             this.save.save();
             this.view.repaint();
         }
+
         if (e.getSource() == loadB) {
             try (ObjectInputStream in = new ObjectInputStream(new FileInputStream("history.obj"))) {
                 SavedObj obj = (SavedObj) in.readObject();
                 this.model.fig = obj.fig;
                 this.model.setCnt(obj.cnt);
+                this.model.setTmpCnt(obj.cnt);
                 this.model.setMaxCnt(obj.maxCnt);
             } catch (Exception err) {
                 err.printStackTrace();
