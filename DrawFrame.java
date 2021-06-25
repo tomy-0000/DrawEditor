@@ -7,7 +7,7 @@ import java.util.*;
 import javax.imageio.*;
 import java.io.*;
 
-class Figure implements Serializable {
+class Figure implements Serializable { // 基底となるクラス
     protected int x, y, width, height, linewidth, originalY;
     protected Color color;
 
@@ -52,11 +52,11 @@ class Figure implements Serializable {
         setSize(neww, newh);
     }
 
-    public void draw(Graphics g) {
+    public void draw(Graphics g) { // 図形を描く
     }
 }
 
-class RectangleFigure extends Figure {
+class RectangleFigure extends Figure { // 四角形
     public RectangleFigure(int x, int y, int w, int h, Color c, int l) {
         super(x, y, w, h, c, l);
     }
@@ -69,7 +69,7 @@ class RectangleFigure extends Figure {
     }
 }
 
-class FillRectangleFigure extends Figure {
+class FillRectangleFigure extends Figure { // 四角形(塗りつぶし)
     public FillRectangleFigure(int x, int y, int w, int h, Color c, int l) {
         super(x, y, w, h, c, l);
     }
@@ -82,7 +82,7 @@ class FillRectangleFigure extends Figure {
     }
 }
 
-class OvalFigure extends Figure {
+class OvalFigure extends Figure { // 楕円
     public OvalFigure(int x, int y, int w, int h, Color c, int l) {
         super(x, y, w, h, c, l);
     }
@@ -95,7 +95,7 @@ class OvalFigure extends Figure {
     }
 }
 
-class FillOvalFigure extends Figure {
+class FillOvalFigure extends Figure { // 楕円(塗りつぶし)
     public FillOvalFigure(int x, int y, int w, int h, Color c, int l) {
         super(x, y, w, h, c, l);
     }
@@ -108,7 +108,7 @@ class FillOvalFigure extends Figure {
     }
 }
 
-class LineFigure extends Figure {
+class LineFigure extends Figure { // 直線
     public LineFigure(int x, int y, int w, int h, Color c, int l) {
         super(x, y, w, h, c, l);
     }
@@ -130,7 +130,7 @@ class LineFigure extends Figure {
     }
 }
 
-class StrokeFigure extends Figure {
+class StrokeFigure extends Figure { // 自由描画
     protected ArrayList<Integer> strokeHistory;
 
     public StrokeFigure(int x, int y, int w, int h, Color c, int l) {
@@ -158,13 +158,13 @@ class StrokeFigure extends Figure {
         Graphics2D g2 = (Graphics2D) g;
         g2.setStroke(new BasicStroke(linewidth));
         for (int i = 2; i < this.strokeHistory.size(); i += 2) {
-            g2.drawLine(strokeHistory.get(i - 2), strokeHistory.get(i - 1), strokeHistory.get(i),
-                    strokeHistory.get(i + 1));
+            g2.drawLine(strokeHistory.get(i - 2), strokeHistory.get(i - 1),
+                strokeHistory.get(i), strokeHistory.get(i + 1));
         }
     }
 }
 
-class DrawModel extends Observable {
+class DrawModel extends Observable { // まとめるクラス
     protected ArrayList<Figure> fig;
     protected Figure drawingFigure;
     protected Color currentColor;
@@ -188,7 +188,7 @@ class DrawModel extends Observable {
         return fig.get(idx);
     }
 
-    public void createFigure(int x, int y) {
+    public void createFigure(int x, int y) { // インスタンス化
         Figure f = null;
         if (this.currentFigure == "Rectangle")
             f = new RectangleFigure(x, y, 0, 0, currentColor, currentLinewidth);
@@ -244,7 +244,7 @@ class DrawModel extends Observable {
     }
 }
 
-class ViewPanel extends JPanel implements Observer {
+class ViewPanel extends JPanel implements Observer { // 実際に表示されるクラス
     protected DrawModel model;
 
     public ViewPanel(DrawModel m, DrawController c) {
@@ -255,7 +255,7 @@ class ViewPanel extends JPanel implements Observer {
         model.addObserver(this);
     }
 
-    public void paintComponent(Graphics g) {
+    public void paintComponent(Graphics g) { // ここでdrawを行う
         super.paintComponent(g);
         ArrayList<Figure> fig = model.getFigures();
         for (int i = 0; i < this.model.cnt; i++) {
@@ -269,7 +269,18 @@ class ViewPanel extends JPanel implements Observer {
     }
 }
 
-class SavePngHistory {
+class SavedObj implements Serializable { // ストロークの保存
+    ArrayList<Figure> fig;
+    int cnt, maxCnt;
+
+    SavedObj(ArrayList<Figure> fig, int cnt, int maxCnt) {
+        this.fig = fig;
+        this.cnt = cnt;
+        this.maxCnt = maxCnt;
+    }
+}
+
+class SavePngHistory { // ストロークと画像の保存
     protected DrawModel model;
     protected ViewPanel view;
 
@@ -280,7 +291,8 @@ class SavePngHistory {
 
     public void save() {
         Dimension rv = this.view.getSize();
-        BufferedImage saveImage = new BufferedImage(rv.width, rv.height, BufferedImage.TYPE_3BYTE_BGR);
+        BufferedImage saveImage = new BufferedImage(rv.width, rv.height,
+            BufferedImage.TYPE_3BYTE_BGR);
         File output = new File("output.png");
         Graphics2D g2 = saveImage.createGraphics();
         ArrayList<Figure> fig = model.getFigures();
@@ -315,7 +327,7 @@ class SavePngHistory {
     }
 }
 
-class ColorSelectPanel extends JPanel implements ChangeListener, ActionListener {
+class ColorSelectPanel extends JPanel implements ChangeListener, ActionListener { // 色選択
 
     JPanel redP, greenP, blueP, currentColorP, chooserAndCurrentColorP, allP;
     JSlider redSlider, greenSlider, blueSlider;
@@ -370,11 +382,12 @@ class ColorSelectPanel extends JPanel implements ChangeListener, ActionListener 
         this.add(allP);
     }
 
-    public Color getCurrentColor() {
-        return new Color(redSlider.getValue(), greenSlider.getValue(), blueSlider.getValue());
+    public Color getCurrentColor() { // 現在の色を取得
+        return new Color(redSlider.getValue(), greenSlider.getValue(),
+            blueSlider.getValue());
     }
 
-    public void stateChanged(ChangeEvent e) {
+    public void stateChanged(ChangeEvent e) { // スライダーが変更された場合
         if (e.getSource() == redSlider) {
             int value = redSlider.getValue();
             redLabel.setText(String.valueOf(value));
@@ -391,7 +404,7 @@ class ColorSelectPanel extends JPanel implements ChangeListener, ActionListener 
         this.currentColorP.setBackground(getCurrentColor());
     }
 
-    public void actionPerformed(ActionEvent e) {
+    public void actionPerformed(ActionEvent e) { // ボタンが押された場合
         JColorChooser colorchooser = new JColorChooser();
         Color color = colorchooser.showDialog(this, "Choose Color", Color.white);
         this.model.currentColor = color;
@@ -402,7 +415,7 @@ class ColorSelectPanel extends JPanel implements ChangeListener, ActionListener 
     }
 }
 
-class ShapeSelectPanel extends JPanel implements ChangeListener, ActionListener {
+class ShapeSelectPanel extends JPanel implements ChangeListener, ActionListener { // 図形選択
     JButton rectangleB, fillRectangleB, ovalB, fillOvalB, lineB, strokeB;
     JSlider linewidthSlider;
     JLabel linewidthLabel;
@@ -442,13 +455,13 @@ class ShapeSelectPanel extends JPanel implements ChangeListener, ActionListener 
         this.add(linewidthPanel, BorderLayout.CENTER);
     }
 
-    public void stateChanged(ChangeEvent e) {
+    public void stateChanged(ChangeEvent e) { // スライダーが変更された場合
         int value = linewidthSlider.getValue();
         linewidthLabel.setText(String.valueOf(value));
         this.model.currentLinewidth = value;
     }
 
-    public void actionPerformed(ActionEvent e) {
+    public void actionPerformed(ActionEvent e) { // ボタンが押された場合
         if (e.getSource() == rectangleB)
             model.currentFigure = "Rectangle";
         if (e.getSource() == fillRectangleB)
@@ -464,14 +477,14 @@ class ShapeSelectPanel extends JPanel implements ChangeListener, ActionListener 
     }
 }
 
-class PredictPanel extends JPanel implements ActionListener {
+class PredictPanel extends JPanel implements ActionListener { // 数字予測
     JLabel predictLabel, predictProbaLabel, predictNoteLabel;
     JButton predictB;
     DrawModel model;
     ViewPanel view;
     protected double[][] weight;
 
-    public PredictPanel(DrawModel model, ViewPanel view) {
+    public PredictPanel(DrawModel model, ViewPanel view) { // weight.txtを読み込む
         this.model = model;
         this.view = view;
         predictB = new JButton("Predict");
@@ -488,7 +501,7 @@ class PredictPanel extends JPanel implements ActionListener {
         this.weight = new double[10][28 * 28 + 1];
         BufferedReader br = null;
         try {
-            File file = new File("./weight.txt");
+            File file = new File("weight.txt");
             br = new BufferedReader(new FileReader(file));
             String line;
             String[] data;
@@ -512,9 +525,10 @@ class PredictPanel extends JPanel implements ActionListener {
         }
     }
 
-    public void actionPerformed(ActionEvent e) {
+    public void actionPerformed(ActionEvent e) { // ボタンが押された場合予測を行いJLabelを変更する
         Dimension rv = this.view.getSize();
-        BufferedImage originalImg = new BufferedImage(rv.width, rv.height, BufferedImage.TYPE_3BYTE_BGR);
+        BufferedImage originalImg = new BufferedImage(rv.width, rv.height,
+            BufferedImage.TYPE_3BYTE_BGR);
         Graphics2D g2 = originalImg.createGraphics();
         ArrayList<Figure> fig = model.getFigures();
         g2.setPaint(Color.white);
@@ -524,7 +538,8 @@ class PredictPanel extends JPanel implements ActionListener {
             f.draw(g2);
         }
         BufferedImage resizedImg = new BufferedImage(28, 28, BufferedImage.TYPE_3BYTE_BGR);
-        resizedImg.createGraphics().drawImage(originalImg.getScaledInstance(28, 28, Image.SCALE_AREA_AVERAGING), 0, 0, 28, 28, null);
+        resizedImg.createGraphics().drawImage(originalImg.getScaledInstance(28, 28,
+            Image.SCALE_AREA_AVERAGING), 0, 0, 28, 28, null);
         double[] imgArr = new double[28 * 28];
         for (int i = 0; i < 28 * 28; ++i) {
             Color c = new Color(resizedImg.getRGB(i % 28, i / 28));
@@ -548,22 +563,12 @@ class PredictPanel extends JPanel implements ActionListener {
         }
         double resultProb = Math.exp(prob[maxIdx]) / softmaxDenominator;
         predictLabel.setText("Digit: " + String.valueOf(maxIdx));
-        predictProbaLabel.setText("Probability: " + String.valueOf((int) (resultProb * 100)) + "%");
+        predictProbaLabel.setText("Probability: " +
+            String.valueOf((int) (resultProb * 100)) + "%");
     }
 }
 
-class SavedObj implements Serializable {
-    ArrayList<Figure> fig;
-    int cnt, maxCnt;
-
-    SavedObj(ArrayList<Figure> fig, int cnt, int maxCnt) {
-        this.fig = fig;
-        this.cnt = cnt;
-        this.maxCnt = maxCnt;
-    }
-}
-
-class UndoAnimeThread extends Thread {
+class UndoAnimeThread extends Thread { // Undoをした場合のアニメーション
     DrawModel model;
     Figure f;
     int maxY;
@@ -577,7 +582,7 @@ class UndoAnimeThread extends Thread {
         this.maxY = f.getOriginalYLocation() + rv.height;
     }
 
-    public void run() {
+    public void run() { // Figureのy座標を変化させる
         while (this.f.getYLocation() < this.maxY) {
             this.f.setYLocation(3);
             this.view.repaint();
@@ -590,7 +595,7 @@ class UndoAnimeThread extends Thread {
     }
 }
 
-class RedoAnimeThread extends Thread {
+class RedoAnimeThread extends Thread { // Redoをした場合のアニメーション
     DrawModel model;
     Figure f;
     int maxY;
@@ -602,7 +607,7 @@ class RedoAnimeThread extends Thread {
         this.view = view;
     }
 
-    public void run() {
+    public void run() { // Figureのy座標を変化させる
         this.model.setCnt(this.model.getCnt() + 1);
         while (this.f.getYLocation() > this.f.getOriginalYLocation()) {
             this.f.setYLocation(-3);
@@ -615,7 +620,7 @@ class RedoAnimeThread extends Thread {
     }
 }
 
-class UndoRedoSaveLoadPanel extends JPanel implements ActionListener {
+class UndoRedoSaveLoadPanel extends JPanel implements ActionListener {  // Undoなどをパネルにする
     JButton undoB, redoB, saveB, loadB;
     SavePngHistory save;
     DrawModel model;
@@ -669,7 +674,8 @@ class UndoRedoSaveLoadPanel extends JPanel implements ActionListener {
         }
 
         if (e.getSource() == loadB) {
-            try (ObjectInputStream in = new ObjectInputStream(new FileInputStream("history.obj"))) {
+            try (ObjectInputStream in = new ObjectInputStream(new
+                FileInputStream("history.obj"))) {
                 SavedObj obj = (SavedObj) in.readObject();
                 this.model.fig = obj.fig;
                 this.model.setCnt(obj.cnt);
@@ -683,7 +689,7 @@ class UndoRedoSaveLoadPanel extends JPanel implements ActionListener {
     }
 }
 
-class DrawFrame extends JFrame {
+class DrawFrame extends JFrame {  // 全て表示する
     DrawModel model;
     ViewPanel view;
     ColorSelectPanel colorSelect;
@@ -724,7 +730,7 @@ class DrawFrame extends JFrame {
     }
 }
 
-class DrawController implements MouseListener, MouseMotionListener {
+class DrawController implements MouseListener, MouseMotionListener {  // マウスが押された場合などにmodelのメソッドを呼ぶ
     protected DrawModel model;
     protected int dragStartX, dragStartY;
 
